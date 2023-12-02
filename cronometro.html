@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Éste cronómetro es mejor que livesplit</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            text-align: center;
+            margin: 50px;
+            background-color: black; /* Fondo negro para el filtro de imagen */
+            color: white; /* Texto blanco para contrastar con el fondo */
+        }
+
+        table {
+            margin: auto;
+            table-layout: fixed;
+            width: 100%;
+        }
+
+        table, th, td {
+            border: 1px solid white;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 15px;
+            width: 33%;
+        }
+
+        #display {
+            font-size: 1.5em;
+        }
+
+        .controls {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Éste cronómetro es mejor que livesplit</h1>
+    <label for="numCronometros">Número de Cronómetros a Crear:</label>
+    <input type="number" id="numCronometros" min="1" max="9" value="1">
+    <button onclick="crearCronometros()">Crear Cronómetros</button>
+    <button onclick="toggleStartStopAll()" id="toggleButtonAll">Iniciar Todo</button>
+
+    <br>
+    <table id="cronometrosTable">
+        <!-- Se crearán las filas de la tabla aquí -->
+    </table>
+
+    <script>
+        let cronometros = [];
+
+        function crearCronometros() {
+            const numCronometros = parseInt(document.getElementById('numCronometros').value);
+
+            document.getElementById('cronometrosTable').innerHTML = '';
+
+            for (let i = 1; i <= numCronometros; i++) {
+                cronometros.push({
+                    isRunning: false,
+                    milliseconds: 0,
+                    interval: null,
+                    nombre: `Jugador ${i}`
+                });
+
+                agregarFilaCronometro(i);
+            }
+        }
+
+        function agregarFilaCronometro(jugador) {
+            const table = document.getElementById('cronometrosTable');
+            const row = table.insertRow(-1);
+
+            const cellJugador = row.insertCell(0);
+            const nombreInput = document.createElement('input');
+            nombreInput.type = 'text';
+            nombreInput.value = cronometros[jugador - 1].nombre;
+            nombreInput.addEventListener('input', function() {
+                cronometros[jugador - 1].nombre = this.value;
+            });
+            cellJugador.appendChild(nombreInput);
+
+            const cellDisplay = row.insertCell(1);
+            const display = document.createElement('div');
+            display.id = `display${jugador}`;
+            display.className = 'display';
+            display.innerText = '00:00:00.00';
+            cellDisplay.appendChild(display);
+
+            const cellControls = row.insertCell(2);
+            const controls = document.createElement('div');
+            controls.className = 'controls';
+            controls.innerHTML = `
+                <button onclick="toggleStartStop(${jugador})" id="toggleButton${jugador}">Iniciar</button>
+                <button onclick="resetStopwatch(${jugador})">Reiniciar</button>
+            `;
+            cellControls.appendChild(controls);
+        }
+
+        function toggleStartStop(jugador) {
+            const cronometro = cronometros[jugador - 1];
+
+            if (!cronometro.isRunning) {
+                startStopwatch(jugador);
+            } else {
+                pauseStopwatch(jugador);
+            }
+
+            updateButtonLabel(jugador);
+        }
+
+        function toggleStartStopAll() {
+            const allRunning = cronometros.every(cronometro => cronometro.isRunning);
+
+            if (!allRunning) {
+                cronometros.forEach((cronometro, index) => {
+                    if (!cronometro.isRunning) {
+                        startStopwatch(index + 1);
+                    }
+                });
+            } else {
+                cronometros.forEach((cronometro, index) => {
+                    pauseStopwatch(index + 1);
+                });
+            }
+
+            updateButtonLabelAll();
+        }
+
+        function startStopwatch(jugador) {
+            const cronometro = cronometros[jugador - 1];
+            cronometro.isRunning = true;
+
+            if (!cronometro.interval) {
+                cronometro.interval = setInterval(() => updateCronometro(jugador), 10);
+            }
+        }
+
+        function pauseStopwatch(jugador) {
+            const cronometro = cronometros[jugador - 1];
+            if (cronometro.isRunning) {
+                cronometro.isRunning = false;
+                clearInterval(cronometro.interval);
+                cronometro.interval = null;
+            }
+        }
+
+        function resetStopwatch(jugador) {
+            const confirmacion = confirm(`¿Está seguro que desea reiniciar el tiempo de ${cronometros[jugador - 1].nombre}?`);
+
+            if (confirmacion) {
+                const cronometro = cronometros[jugador - 1];
+                pauseStopwatch(jugador);
+                cronometro.milliseconds = 0;
+                updateCronometro(jugador);
+                updateButtonLabel(jugador);
+            }
+        }
+
+        function updateCronometro(jugador) {
+            const cronometro = cronometros[jugador - 1];
+
+            if (cronometro.isRunning) {
+                cronometro.milliseconds += 10;
+
+                const centiseconds = Math.floor(cronometro.milliseconds / 10);
+                const seconds = Math.floor(centiseconds / 100);
+                const minutes = Math.floor(seconds / 60);
+                const hours = Math.floor(minutes / 60);
+
+                cronometro.centiseconds = centiseconds % 100;
+                cronometro.seconds = seconds % 60;
+                cronometro.minutes = minutes % 60;
+                cronometro.hours = hours;
+
+                const formattedTime = `${pad(cronometro.hours)}:${pad(cronometro.minutes)}:${pad(cronometro.seconds)}.${pad(cronometro.centiseconds)}`;
+                document.getElementById(`display${jugador}`).innerText = formattedTime;
+            } else {
+                document.getElementById(`display${jugador}`).innerText = '00:00:00.00';
+            }
+        }
+
+        function pad(value) {
+            return value < 10 ? '0' + value : value;
+        }
+
+        function updateButtonLabel(jugador) {
+            const button = document.getElementById(`toggleButton${jugador}`);
+            if (button) {
+                button.innerText = cronometros[jugador - 1].isRunning ? 'Pausar' : 'Reanudar';
+            }
+        }
+
+        function updateButtonLabelAll() {
+            const allRunning = cronometros.every(cronometro => cronometro.isRunning);
+
+            cronometros.forEach((cronometro, index) => {
+                const button = document.getElementById(`toggleButton${index + 1}`);
+                if (button) {
+                    button.innerText = allRunning ? 'Pausar' : 'Reanudar';
+                }
+            });
+
+            const buttonAll = document.getElementById('toggleButtonAll');
+            if (buttonAll) {
+                buttonAll.innerText = allRunning ? 'Pausar Todo' : 'Iniciar Todo';
+            }
+        }
+
+        // Crear un cronómetro por defecto al cargar la página
+        crearCronometros();
+    </script>
+</body>
+</html>

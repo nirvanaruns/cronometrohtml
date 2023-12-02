@@ -44,6 +44,7 @@
     <input type="number" id="numCronometros" min="1" max="9" value="1">
     <button onclick="crearCronometros()">Crear Cronómetros</button>
     <button onclick="toggleStartStopAll()" id="toggleButtonAll">Iniciar Todo</button>
+    <button onclick="resetAll()">Reiniciar Todo</button>
 
     <br>
     <table id="cronometrosTable">
@@ -149,15 +150,19 @@
         }
 
         function resetStopwatch(jugador) {
-            const confirmacion = confirm(`¿Está seguro que desea reiniciar el tiempo de ${cronometros[jugador - 1].nombre}?`);
+            const cronometro = cronometros[jugador - 1];
+            pauseStopwatch(jugador);
+            cronometro.milliseconds = 0;
+            updateCronometro(jugador);
+            updateButtonLabel(jugador);
+        }
 
-            if (confirmacion) {
-                const cronometro = cronometros[jugador - 1];
-                pauseStopwatch(jugador);
+        function resetAll() {
+            cronometros.forEach((cronometro, index) => {
                 cronometro.milliseconds = 0;
-                updateCronometro(jugador);
-                updateButtonLabel(jugador);
-            }
+                updateCronometro(index + 1);
+                updateButtonLabel(index + 1);
+            });
         }
 
         function updateCronometro(jugador) {

@@ -42,10 +42,24 @@
         h1 {
             color: #ff4500; /* Cambiar el color del título a naranja */
         }
+
+        #instrucciones {
+            margin-top: 20px;
+            font-size: 1.2em;
+        }
     </style>
 </head>
 <body>
     <h1>Timer Carreras por Nirvanita ♥</h1>
+
+    <!-- Instrucciones de Uso -->
+    <div id="instrucciones">
+        <p>Para pausar/reanudar un cronómetro individual, usa las teclas del 1 al 9.</br>
+        Presiona la tecla 0 para iniciar/pausar todos los cronómetros.</br>
+        Elige la cantidad de cronómetros antes de crearlos.</br>
+        Utiliza los botones "Reiniciar Todo" para reiniciar todos los cronómetros.</br>
+    </div>
+
     <label for="numCronometros">Número de Cronómetros a Crear:</label>
     <input type="number" id="numCronometros" min="1" max="9" value="1">
     <button onclick="crearCronometros()">Crear Cronómetros</button>
@@ -65,12 +79,12 @@
 
             document.getElementById('cronometrosTable').innerHTML = '';
 
-            for (let i = 1; i <= numCronometros; i++) {
+            for (let i = 0; i < numCronometros; i++) {
                 cronometros.push({
                     isRunning: false,
                     milliseconds: 0,
                     interval: null,
-                    nombre: `Jugador ${i}`
+                    nombre: `Jugador ${i + 1}`
                 });
 
                 agregarFilaCronometro(i);
@@ -84,26 +98,26 @@
             const cellJugador = row.insertCell(0);
             const nombreInput = document.createElement('input');
             nombreInput.type = 'text';
-            nombreInput.value = cronometros[jugador - 1].nombre;
-            nombreInput.addEventListener('input', function() {
-                cronometros[jugador - 1].nombre = this.value;
+            nombreInput.value = cronometros[jugador].nombre;
+            nombreInput.addEventListener('input', function () {
+                cronometros[jugador].nombre = this.value;
             });
             cellJugador.appendChild(nombreInput);
 
             const cellDisplay = row.insertCell(1);
             const display = document.createElement('div');
-            display.id = `display${jugador}`;
+            display.id = `display${jugador + 1}`;
             display.className = 'display';
-            display.innerText = '00:00:00.00';
+            display.innerText = '00:00:00';
             cellDisplay.appendChild(display);
 
             const cellControls = row.insertCell(2);
             const controls = document.createElement('div');
             controls.className = 'controls';
             controls.innerHTML = `
-                <button onclick="toggleStartStop(${jugador})" id="toggleButton${jugador}">Iniciar</button>
-                <button onclick="resetStopwatch(${jugador})">Reiniciar</button>
-            `;
+                    <button onclick="toggleStartStop(${jugador + 1})" id="toggleButton${jugador + 1}">Iniciar</button>
+                    <button onclick="resetStopwatch(${jugador + 1})">Reiniciar</button>
+                `;
             cellControls.appendChild(controls);
         }
 
@@ -142,7 +156,7 @@
             cronometro.isRunning = true;
 
             if (!cronometro.interval) {
-                cronometro.interval = setInterval(() => updateCronometro(jugador), 10);
+                cronometro.interval = setInterval(() => updateCronometro(jugador), 1000);
             }
         }
 
@@ -175,22 +189,16 @@
             const cronometro = cronometros[jugador - 1];
 
             if (cronometro.isRunning) {
-                cronometro.milliseconds += 10;
+                cronometro.milliseconds += 1000;
 
-                const centiseconds = Math.floor(cronometro.milliseconds / 10);
-                const seconds = Math.floor(centiseconds / 100);
-                const minutes = Math.floor(seconds / 60);
-                const hours = Math.floor(minutes / 60);
+                const seconds = Math.floor(cronometro.milliseconds / 1000) % 60;
+                const minutes = Math.floor(cronometro.milliseconds / 60000) % 60;
+                const hours = Math.floor(cronometro.milliseconds / 3600000);
 
-                cronometro.centiseconds = centiseconds % 100;
-                cronometro.seconds = seconds % 60;
-                cronometro.minutes = minutes % 60;
-                cronometro.hours = hours;
-
-                const formattedTime = `${pad(cronometro.hours)}:${pad(cronometro.minutes)}:${pad(cronometro.seconds)}.${pad(cronometro.centiseconds)}`;
+                const formattedTime = `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
                 document.getElementById(`display${jugador}`).innerText = formattedTime;
             } else {
-                document.getElementById(`display${jugador}`).innerText = '00:00:00.00';
+                document.getElementById(`display${jugador}`).innerText = '00:00:00';
             }
         }
 
@@ -221,8 +229,24 @@
             }
         }
 
-        // Crear un cronómetro por defecto al cargar la página
-        crearCronometros();
+        // Event listener para las pulsaciones de teclas
+        document.addEventListener('keydown', function (event) {
+            const key = event.key;
+
+            // Hotkey para iniciar/pausar todos los cronómetros con la tecla '0'
+            if (key === '0') {
+                toggleStartStopAll();
+            } else {
+                const isNumberKey = /^[1-9]$/.test(key);
+                if (isNumberKey) {
+                    const jugador = parseInt(key);
+                    if (jugador <= cronometros.length) {
+                        toggleStartStop(jugador);
+                    }
+                }
+            }
+        });
+
     </script>
 </body>
 </html>
